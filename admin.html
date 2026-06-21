@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuryaNex Renewables | Admin Dashboard</title>
+  
+  <script>
+    // Immediately set theme before layout parses to prevent theme flashes
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+  
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Dashboard-specific Styles */
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    .admin-wrapper {
+      padding: 40px 0;
+    }
+
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Auth Panel */
+    #auth-panel {
+      position: fixed;
+      inset: 0;
+      background-color: var(--bg-page);
+      z-index: 2000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .auth-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+
+    .auth-icon {
+      width: 64px;
+      height: 64px;
+      background-color: var(--primary-glow);
+      color: var(--primary);
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      font-size: 1.75rem;
+    }
+
+    .auth-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+
+    .auth-card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 28px;
+    }
+
+    .auth-form-group {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .auth-form-group label {
+      display: block;
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    /* Dashboard Panels */
+    #dashboard-panel {
+      display: none;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .metric-box {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: left;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric-box-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .metric-box-value {
+      font-family: var(--font-heading);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .metric-box-value.gold { color: var(--primary); }
+    .metric-box-value.green { color: var(--secondary); }
+
+    /* Controls */
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      flex-grow: 1;
+      max-width: 400px;
+    }
+
+    .search-input-wrapper svg {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .search-control {
+      padding-left: 48px;
+      width: 100%;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      background-color: var(--bg-card-inset);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .filter-tab {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 8px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .filter-tab:hover {
+      color: var(--text-main);
+    }
+
+    .filter-tab.active {
+      background-color: var(--bg-card);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Leads Table */
+    .table-container {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      box-shadow: var(--shadow-md);
+    }
+
+    .leads-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .leads-table th, .leads-table td {
+      padding: 18px 24px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .leads-table th {
+      background-color: var(--bg-card-inset);
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--text-main);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+    }
+
+    .leads-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .leads-table tr:hover td {
+      background-color: rgba(0, 0, 0, 0.015);
+    }
+
+    .badge-sector {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-sector.residential {
+      background-color: var(--primary-glow);
+      color: var(--primary);
+      border: 1px solid var(--border-glow);
+    }
+
+    .badge-sector.commercial {
+      background-color: var(--secondary-glow);
+      color: var(--secondary);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-delete {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-delete:hover {
+      background-color: #ef4444;
+      color: #ffffff;
+      border-color: #ef4444;
+      transform: scale(1.05);
+    }
+
+    .no-leads-row {
+      text-align: center;
+      padding: 60px 24px !important;
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .lead-message {
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: help;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ADMIN AUTH GATE PANEL -->
+  <div id="auth-panel">
+    <div class="auth-card">
+      <div class="auth-icon flex-center">🔒</div>
+      <h2>SuryaNex Renewables</h2>
+      <p>Enter your Administrator Password to view customer solar leads.</p>
+      
+      <form id="auth-form">
+        <div class="auth-form-group">
+          <label for="admin-pass">Security Password</label>
+          <input type="password" id="admin-pass" class="form-control" placeholder="••••••••" style="width: 100%; background: var(--bg-card-inset); border-color: var(--border-color); color: var(--text-main);" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Unlock Dashboard</button>
+        <div id="auth-error" style="color: #f87171; font-size: 0.85rem; margin-top: 12px; display: none;">Invalid password. Access Denied.</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD PANEL -->
+  <div id="dashboard-panel" class="admin-wrapper">
+    <div class="container">
+      
+      <!-- HEADER -->
+      <div class="admin-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/1999/xlink">
+              <path d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,2A1,1 0 0,1 13,3V5A1,1 0 0,1 12,6A1,1 0 0,1 11,5V3A1,1 0 0,1 12,2M12,18A1,1 0 0,1 13,19V21A1,1 0 0,1 12,22A1,1 0 0,1 11,21V19A1,1 0 0,1 12,18M2,12A1,1 0 0,1 3,11H5A1,1 0 0,1 6,12A1,1 0 0,1 5,13H3A1,1 0 0,1 2,12M18,12A1,1 0 0,1 19,11H21A1,1 0 0,1 22,12A1,1 0 0,1 21,13H19A1,1 0 0,1 18,12M4.93,4.93A1,1 0 0,1 6.34,4.93L7.76,6.34A1,1 0 0,1 7.76,7.76A1,1 0 0,1 6.34,7.76L4.93,6.34A1,1 0 0,1 4.93,4.93M16.24,16.24A1,1 0 0,1 17.66,16.24L19.07,17.66A1,1 0 0,1 19.07,19.07A1,1 0 0,1 17.66,19.07L16.24,17.66A1,1 0 0,1 16.24,16.24M19.07,4.93A1,1 0 0,1 19.07,6.34L17.66,7.76A1,1 0 0,1 16.24,7.76A1,1 0 0,1 16.24,6.34L17.66,4.93A1,1 0 0,1 19.07,4.93M7.76,16.24A1,1 0 0,1 7.76,17.66L6.34,19.07A1,1 0 0,1 4.93,19.07A1,1 0 0,1 4.93,17.66L6.34,16.24A1,1 0 0,1 7.76,16.24Z" />
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="logo-title" style="color: var(--text-light);">Surya<span>Nex</span></span>
+            <span class="logo-subtitle">Renewables</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Theme" title="Toggle Light/Dark Mode" style="margin-right: 8px;">
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <span style="font-size: 0.85rem; color: var(--secondary);">● Admin Connected</span>
+          <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.8rem;">Log Out</button>
+        </div>
+      </div>
+
+      <!-- METRICS GRID -->
+      <div class="metrics-row">
+        <div class="metric-box">
+          <div class="metric-box-title">Total Inquiries</div>
+          <div class="metric-box-value" id="metric-total">0</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-title">Residential Leads</div>
+          <div class="metric-box-value gold" id="metric-res">0</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-title">Commercial Leads</div>
+          <div class="metric-box-value green" id="metric-com">0</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-title">Total C&I Demand</div>
+          <div class="metric-box-value" id="metric-capacity">0.0 kW</div>
+        </div>
+      </div>
+
+      <!-- CONTROLS & FILTERING -->
+      <div class="controls-row">
+        <div class="search-input-wrapper">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="search-box" class="form-control search-control" placeholder="Search by name, phone, email...">
+        </div>
+        
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="residential">Residential</button>
+          <button class="filter-tab" data-filter="commercial">Commercial</button>
+        </div>
+      </div>
+
+      <!-- DATA TABLE -->
+      <div class="table-container">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>Lead ID</th>
+              <th>Submitted At</th>
+              <th>Client Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Sector</th>
+              <th>Est. Bill</th>
+              <th>Est. System</th>
+              <th>Comments</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body">
+            <!-- Leads will be dynamically populated here -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const authPanel = document.getElementById('auth-panel');
+      const dashboardPanel = document.getElementById('dashboard-panel');
+      const authForm = document.getElementById('auth-form');
+      const adminPassInput = document.getElementById('admin-pass');
+      const authError = document.getElementById('auth-error');
+      const logoutBtn = document.getElementById('logout-btn');
+      
+      const leadsBody = document.getElementById('leads-body');
+      const searchBox = document.getElementById('search-box');
+      const filterTabs = document.querySelectorAll('.filter-tab');
+
+      // Metric elements
+      const mTotal = document.getElementById('metric-total');
+      const mRes = document.getElementById('metric-res');
+      const mCom = document.getElementById('metric-com');
+      const mCapacity = document.getElementById('metric-capacity');
+
+      let allLeads = [];
+      let currentFilter = 'all';
+
+      // Check session storage for existing password
+      const savedPass = sessionStorage.getItem('admin_session_password');
+      if (savedPass) {
+        verifyAndLoad(savedPass);
+      }
+
+      authForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pass = adminPassInput.value;
+        verifyAndLoad(pass);
+      });
+
+      logoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('admin_session_password');
+        location.reload();
+      });
+
+      // API calls
+      async function verifyAndLoad(password) {
+        authError.style.display = 'none';
+        
+        try {
+          const response = await fetch('/api/quotes', {
+            method: 'GET',
+            headers: {
+              'X-Admin-Password': password
+            }
+          });
+
+          if (response.ok) {
+            allLeads = await response.json();
+            
+            // Save correct password in session storage
+            sessionStorage.setItem('admin_session_password', password);
+            
+            // Toggle panels
+            authPanel.style.display = 'none';
+            dashboardPanel.style.display = 'block';
+            
+            renderLeads();
+          } else {
+            throw new Error('Authentication failed');
+          }
+        } catch (error) {
+          authError.style.display = 'block';
+          adminPassInput.value = '';
+          sessionStorage.removeItem('admin_session_password');
+        }
+      }
+
+      async function deleteLead(leadId) {
+        if (!confirm(`Are you sure you want to delete lead ${leadId}?`)) return;
+        
+        const password = sessionStorage.getItem('admin_session_password');
+        
+        try {
+          const response = await fetch(`/api/quote/${leadId}`, {
+            method: 'DELETE',
+            headers: {
+              'X-Admin-Password': password
+            }
+          });
+
+          if (response.ok) {
+            // Remove locally and re-render
+            allLeads = allLeads.filter(lead => lead.id !== leadId);
+            renderLeads();
+          } else {
+            alert('Error deleting lead from backend.');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Failed to connect to backend to delete lead.');
+        }
+      }
+
+      function renderLeads() {
+        leadsBody.innerHTML = '';
+        const searchVal = searchBox.value.toLowerCase();
+        
+        // Filter leads
+        const filtered = allLeads.filter(lead => {
+          // Sector match
+          const sectorMatch = currentFilter === 'all' || lead.sector === currentFilter;
+          
+          // Search string match
+          const nameMatch = lead.name.toLowerCase().includes(searchVal);
+          const phoneMatch = lead.phone.includes(searchVal);
+          const emailMatch = (lead.email || '').toLowerCase().includes(searchVal);
+          const idMatch = lead.id.toLowerCase().includes(searchVal);
+          
+          return sectorMatch && (nameMatch || phoneMatch || emailMatch || idMatch);
+        });
+
+        // Compute metrics
+        mTotal.textContent = allLeads.length;
+        mRes.textContent = allLeads.filter(l => l.sector === 'residential').length;
+        mCom.textContent = allLeads.filter(l => l.sector === 'commercial').length;
+        
+        let totalKw = 0;
+        allLeads.forEach(l => {
+          if (l.capacity_estimate) {
+            // Extract numeric capacity from string (e.g. "3.0 kW System")
+            const num = parseFloat(l.capacity_estimate);
+            if (!isNaN(num)) totalKw += num;
+          }
+        });
+        mCapacity.textContent = `${totalKw.toFixed(1)} kW`;
+
+        // Render table rows
+        if (filtered.length === 0) {
+          leadsBody.innerHTML = `
+            <tr>
+              <td colspan="10" class="no-leads-row">
+                No inquiries matching search / filters found.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        filtered.reverse().forEach(lead => {
+          const date = new Date(lead.timestamp).toLocaleString('en-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          });
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-weight:700; color:var(--primary);">${lead.id}</td>
+            <td style="font-size:0.8rem; color:var(--text-muted);">${date}</td>
+            <td style="font-weight:600;">${lead.name}</td>
+            <td><a href="tel:${lead.phone}" style="color:var(--text-main); text-decoration:none;">${lead.phone}</a></td>
+            <td>${lead.email ? `<a href="mailto:${lead.email}" style="color:var(--primary); text-decoration:none;">${lead.email}</a>` : '<span style="color:var(--text-muted)">N/A</span>'}</td>
+            <td><span class="badge-sector ${lead.sector}">${lead.sector}</span></td>
+            <td>${lead.bill_estimate || 'N/A'}</td>
+            <td style="font-weight:600;">${lead.capacity_estimate || 'N/A'}</td>
+            <td>
+              <div class="lead-message" title="${lead.message || 'No comments'}">
+                ${lead.message || '<span style="color:var(--text-muted)">N/A</span>'}
+              </div>
+            </td>
+            <td>
+              <button class="btn-delete" data-id="${lead.id}">Delete</button>
+            </td>
+          `;
+          
+          tr.querySelector('.btn-delete').addEventListener('click', () => deleteLead(lead.id));
+          leadsBody.appendChild(tr);
+        });
+      }
+
+      // Event listeners for searches/filters
+      searchBox.addEventListener('input', renderLeads);
+
+      filterTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          filterTabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          currentFilter = tab.getAttribute('data-filter');
+          renderLeads();
+        });
+      });
+
+      // Admin Theme Switcher Toggle Hook
+      const themeToggleBtn = document.getElementById('theme-toggle');
+      if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+          const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+          const newTheme = activeTheme === 'light' ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Virtual Environment
+venv/
+backend/venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local Database / Leads Submissions
+backend/submissions.json
+backend/submissions.json.backup
+backend/leads.db
+
+# OS files
+.DS_Store
+Thumbs.db
